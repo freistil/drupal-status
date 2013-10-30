@@ -4,17 +4,21 @@
 //
 // Original by [Lullabot](http://www.lullabot.com/articles/varnish-multiple-web-servers-drupal)
 // Adapted for DrupalCONCEPT by Jochen Lillich <jochen@freistil-consulting.de>
-// 
+//
 
 // Register our shutdown function so that no other shutdown functions run before this one.
 // This shutdown function calls exit(), immediately short-circuiting any other shutdown functions,
 // such as those registered by the devel.module for statistics.
+
+
 register_shutdown_function('status_shutdown');
 function status_shutdown() {
   exit();
 }
 
 // Drupal bootstrap.
+define('DRUPAL_ROOT', getcwd());
+
 require_once './includes/bootstrap.inc';
 drupal_bootstrap(DRUPAL_BOOTSTRAP_DATABASE);
 
@@ -23,18 +27,33 @@ $errors = array();
 
 // Check that the main database is active.
 $result = db_query('SELECT * FROM {users} WHERE uid = 1');
-$account = db_fetch_object($result);
-if (!$account->uid == 1) {
-  $errors[] = 'Master database not responding.';
+
+
+//Drupal6
+//$account = db_fetch_object($result);
+
+// Drupal 7
+foreach ($result as $record) {
+  if (!$record->uid == 1) {
+    $errors[] = 'Master database not responding.';
+  }
 }
+
+
 
 // Check that the slave database is active.
 if (function_exists('db_query_slave')) {
   $result = db_query_slave('SELECT * FROM {users} WHERE uid = 1');
-  $account = db_fetch_object($result);
-  if (!$account->uid == 1) {
-    $errors[] = 'Slave database not responding.';
+  //Drupal 6
+  //$account = db_fetch_object($result);
+
+  // Drupal 7
+  foreach ($result as $record) {
+    if (!$record->uid == 1) {
+      $errors[] = 'Slave database not responding.';
+    }
   }
+
 }
 
 // Check that all memcache instances are running on this server.
